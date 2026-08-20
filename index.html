@@ -5,10 +5,9 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Detector de Pedidos</title>
+<title>D3stro - Detector de Pedidos</title>
 
 <style>
 
@@ -120,16 +119,16 @@ button {
 
 <div class="container">
 
-<h1>📦 DETECTOR DE PEDIDOS</h1>
+<h1>📦 D3STRO</h1>
 
 <p class="subtitulo">
-Bipe o pedido utilizando o coletor
+Detector de Pedidos
 </p>
 
 <input
     type="text"
     id="pedido"
-    placeholder="Bipe o pedido aqui"
+    placeholder="Bipe o pedido"
     autocomplete="off"
     autofocus
 >
@@ -187,19 +186,16 @@ Bipe o pedido utilizando o coletor
 
 </thead>
 
-<tbody id="historico">
-
-</tbody>
+<tbody id="historico"></tbody>
 
 </table>
 
 <button onclick="limparHistorico()">
-
 LIMPAR HISTÓRICO
-
 </button>
 
 </div>
+
 
 <script>
 
@@ -210,6 +206,15 @@ localStorage.getItem("pedidos")
 
 const campo =
 document.getElementById("pedido");
+
+let timer = null;
+
+
+/*
+=================================================
+ENTER MANUAL
+=================================================
+*/
 
 campo.addEventListener(
 "keydown",
@@ -225,6 +230,48 @@ function(event) {
 
 });
 
+
+/*
+=================================================
+LEITURA AUTOMÁTICA DO ZEBRA
+=================================================
+*/
+
+campo.addEventListener(
+"input",
+function() {
+
+    clearTimeout(timer);
+
+    /*
+    Aguarda 150ms depois da última informação
+    recebida pelo leitor.
+    */
+
+    timer = setTimeout(
+        function() {
+
+            if (
+                campo.value.trim() !== ""
+            ) {
+
+                verificarPedido();
+
+            }
+
+        },
+        150
+    );
+
+});
+
+
+/*
+=================================================
+PROCESSAR PEDIDO
+=================================================
+*/
+
 function verificarPedido() {
 
     let pedido =
@@ -234,13 +281,25 @@ function verificarPedido() {
         return;
     }
 
+
+    /*
+    PEDIDO JÁ EXISTE
+    */
+
     if (pedidos[pedido]) {
 
         pedidos[pedido]++;
 
         mostrarDuplicado(pedido);
 
-    } else {
+    }
+
+
+    /*
+    PEDIDO NOVO
+    */
+
+    else {
 
         pedidos[pedido] = 1;
 
@@ -248,15 +307,33 @@ function verificarPedido() {
 
     }
 
+
     salvar();
 
     atualizarTabela();
 
+
+    /*
+    LIMPA O CAMPO
+    */
+
     campo.value = "";
+
+
+    /*
+    DEVOLVE O FOCO PARA O CAMPO
+    */
 
     campo.focus();
 
 }
+
+
+/*
+=================================================
+PEDIDO NOVO
+=================================================
+*/
 
 function mostrarNovo(pedido) {
 
@@ -270,6 +347,13 @@ function mostrarNovo(pedido) {
     "Pedido: " + pedido;
 
 }
+
+
+/*
+=================================================
+PEDIDO DUPLICADO
+=================================================
+*/
 
 function mostrarDuplicado(pedido) {
 
@@ -288,6 +372,13 @@ function mostrarDuplicado(pedido) {
 
 }
 
+
+/*
+=================================================
+SALVAR
+=================================================
+*/
+
 function salvar() {
 
     localStorage.setItem(
@@ -297,6 +388,13 @@ function salvar() {
 
 }
 
+
+/*
+=================================================
+ATUALIZAR TABELA
+=================================================
+*/
+
 function atualizarTabela() {
 
     let total = 0;
@@ -305,22 +403,28 @@ function atualizarTabela() {
 
     let tabela = "";
 
+
     for (
         let pedido in pedidos
     ) {
 
         total++;
 
-        if (pedidos[pedido] > 1) {
+
+        if (
+            pedidos[pedido] > 1
+        ) {
 
             duplicados++;
 
         }
 
+
         let status =
         pedidos[pedido] > 1
         ? "🚨 DUPLICADO"
         : "🟢 OK";
+
 
         tabela += `
 
@@ -338,19 +442,29 @@ function atualizarTabela() {
 
     }
 
+
     document.getElementById(
         "total"
     ).innerText = total;
 
+
     document.getElementById(
         "duplicados"
     ).innerText = duplicados;
+
 
     document.getElementById(
         "historico"
     ).innerHTML = tabela;
 
 }
+
+
+/*
+=================================================
+LIMPAR HISTÓRICO
+=================================================
+*/
 
 function limparHistorico() {
 
@@ -359,32 +473,42 @@ function limparHistorico() {
         "Deseja realmente apagar todo o histórico?"
     );
 
+
     if (!confirmar) {
         return;
     }
 
+
     pedidos = {};
+
 
     localStorage.removeItem(
         "pedidos"
     );
 
+
     document.getElementById(
         "resultado"
     ).className = "aguardando";
+
 
     document.getElementById(
         "resultado"
     ).innerHTML =
     "Aguardando bipagem...";
 
+
     atualizarTabela();
+
 
     campo.focus();
 
 }
 
+
 atualizarTabela();
+
+campo.focus();
 
 </script>
 
