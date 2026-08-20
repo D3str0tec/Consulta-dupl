@@ -28,11 +28,13 @@ body {
 
 h1 {
     text-align: center;
+    margin-bottom: 5px;
 }
 
 .subtitulo {
     text-align: center;
     color: #666;
+    margin-bottom: 25px;
 }
 
 #pedido {
@@ -43,6 +45,11 @@ h1 {
     border: 2px solid #aaa;
     border-radius: 10px;
     box-sizing: border-box;
+    outline: none;
+}
+
+#pedido:focus {
+    border-color: #007bff;
 }
 
 #resultado {
@@ -56,6 +63,7 @@ h1 {
 
 .aguardando {
     background: #eeeeee;
+    color: #555;
 }
 
 .novo {
@@ -72,15 +80,21 @@ h1 {
     display: flex;
     justify-content: space-around;
     margin-top: 25px;
+    gap: 15px;
 }
 
 .card {
     text-align: center;
+    flex: 1;
+    padding: 15px;
+    background: #f8f8f8;
+    border-radius: 10px;
 }
 
 .numero {
     font-size: 32px;
     font-weight: bold;
+    margin-top: 5px;
 }
 
 table {
@@ -109,6 +123,11 @@ button {
     border-radius: 8px;
     background: #333;
     color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #555;
 }
 
 </style>
@@ -119,157 +138,204 @@ button {
 
 <div class="container">
 
-<h1>📦 CONSULTA</h1>
+    <h1>🔎 CONSULTA</h1>
 
-<p class="subtitulo">
-Detector de Pedidos
-</p>
+    <p class="subtitulo">
+        Bipe o pedido para verificar duplicidade
+    </p>
 
-<input
-    type="text"
-    id="pedido"
-    placeholder="Bipe o pedido"
-    autocomplete="off"
-    autofocus
->
 
-<div
-    id="resultado"
-    class="aguardando"
->
-    Aguardando bipagem...
-</div>
+    <!-- CAMPO DE LEITURA -->
 
-<div class="painel">
+    <input
+        type="text"
+        id="pedido"
+        placeholder="Bipe o pedido"
+        autocomplete="off"
+        autofocus
+    >
 
-<div class="card">
 
-<div>Total de pedidos</div>
+    <!-- RESULTADO -->
 
-<div
-    id="total"
-    class="numero"
->
-0
-</div>
+    <div
+        id="resultado"
+        class="aguardando"
+    >
+        Aguardando bipagem...
+    </div>
 
-</div>
 
-<div class="card">
+    <!-- PAINEL -->
 
-<div>Duplicados</div>
+    <div class="painel">
 
-<div
-    id="duplicados"
-    class="numero"
->
-0
-</div>
+        <div class="card">
 
-</div>
+            <div>Total de pedidos</div>
 
-</div>
+            <div
+                id="total"
+                class="numero"
+            >
+                0
+            </div>
 
-<table>
+        </div>
 
-<thead>
 
-<tr>
+        <div class="card">
 
-<th>Pedido</th>
+            <div>Duplicados</div>
 
-<th>Status</th>
+            <div
+                id="duplicados"
+                class="numero"
+            >
+                0
+            </div>
 
-<th>Qtd.</th>
+        </div>
 
-</tr>
+    </div>
 
-</thead>
 
-<tbody id="historico"></tbody>
+    <!-- HISTÓRICO -->
 
-</table>
+    <table>
 
-<button onclick="limparHistorico()">
-LIMPAR HISTÓRICO
-</button>
+        <thead>
+
+            <tr>
+
+                <th>Pedido</th>
+
+                <th>Status</th>
+
+                <th>Qtd.</th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody id="historico">
+
+        </tbody>
+
+    </table>
+
+
+    <!-- LIMPAR -->
+
+    <button onclick="limparHistorico()">
+
+        LIMPAR HISTÓRICO
+
+    </button>
 
 </div>
 
 
 <script>
 
+
+/*
+========================================================
+BANCO LOCAL DO NAVEGADOR
+========================================================
+*/
+
 let pedidos =
 JSON.parse(
-localStorage.getItem("pedidos")
+    localStorage.getItem("pedidos")
 ) || {};
+
+
+/*
+========================================================
+CAMPO DO PEDIDO
+========================================================
+*/
 
 const campo =
 document.getElementById("pedido");
+
+
+/*
+========================================================
+TEMPORIZADOR DA BIPAGEM
+========================================================
+*/
 
 let timer = null;
 
 
 /*
-=================================================
+========================================================
 ENTER MANUAL
-=================================================
+========================================================
 */
 
 campo.addEventListener(
-"keydown",
-function(event) {
+    "keydown",
+    function(event) {
 
-    if (event.key === "Enter") {
+        if (event.key === "Enter") {
 
-        event.preventDefault();
+            event.preventDefault();
 
-        verificarPedido();
+            verificarPedido();
+
+        }
 
     }
-
-});
+);
 
 
 /*
-=================================================
-LEITURA AUTOMÁTICA DO ZEBRA
-=================================================
+========================================================
+BIPAGEM AUTOMÁTICA
+========================================================
+
+O Zebra envia os números rapidamente.
+
+Quando parar de enviar caracteres,
+o sistema aguarda 150ms e processa automaticamente.
+
+Não precisa apertar ENTER.
+========================================================
 */
 
 campo.addEventListener(
-"input",
-function() {
+    "input",
+    function() {
 
-    clearTimeout(timer);
+        clearTimeout(timer);
 
-    /*
-    Aguarda 150ms depois da última informação
-    recebida pelo leitor.
-    */
+        timer = setTimeout(
+            function() {
 
-    timer = setTimeout(
-        function() {
+                if (
+                    campo.value.trim() !== ""
+                ) {
 
-            if (
-                campo.value.trim() !== ""
-            ) {
+                    verificarPedido();
 
-                verificarPedido();
+                }
 
-            }
+            },
+            150
+        );
 
-        },
-        150
-    );
-
-});
+    }
+);
 
 
 /*
-=================================================
-PROCESSAR PEDIDO
-=================================================
+========================================================
+VERIFICAR PEDIDO
+========================================================
 */
 
 function verificarPedido() {
@@ -277,9 +343,24 @@ function verificarPedido() {
     let pedido =
     campo.value.trim();
 
+
+    /*
+    NÃO PROCESSA CAMPO VAZIO
+    */
+
     if (pedido === "") {
+
         return;
+
     }
+
+
+    /*
+    REMOVE ESPAÇOS
+    */
+
+    pedido =
+    pedido.replace(/\s/g, "");
 
 
     /*
@@ -308,20 +389,29 @@ function verificarPedido() {
     }
 
 
+    /*
+    SALVA
+    */
+
     salvar();
+
+
+    /*
+    ATUALIZA TABELA
+    */
 
     atualizarTabela();
 
 
     /*
-    LIMPA O CAMPO
+    LIMPA CAMPO
     */
 
     campo.value = "";
 
 
     /*
-    DEVOLVE O FOCO PARA O CAMPO
+    DEVOLVE FOCO
     */
 
     campo.focus();
@@ -330,9 +420,9 @@ function verificarPedido() {
 
 
 /*
-=================================================
+========================================================
 PEDIDO NOVO
-=================================================
+========================================================
 */
 
 function mostrarNovo(pedido) {
@@ -340,19 +430,28 @@ function mostrarNovo(pedido) {
     const resultado =
     document.getElementById("resultado");
 
-    resultado.className = "novo";
+
+    resultado.className =
+    "novo";
+
 
     resultado.innerHTML =
-    "🟢 PEDIDO NOVO<br><br>" +
-    "Pedido: " + pedido;
+
+        "🟢 PEDIDO NOVO" +
+
+        "<br><br>" +
+
+        "Pedido: " +
+
+        pedido;
 
 }
 
 
 /*
-=================================================
+========================================================
 PEDIDO DUPLICADO
-=================================================
+========================================================
 */
 
 function mostrarDuplicado(pedido) {
@@ -360,23 +459,36 @@ function mostrarDuplicado(pedido) {
     const resultado =
     document.getElementById("resultado");
 
-    resultado.className = "duplicado";
+
+    resultado.className =
+    "duplicado";
+
 
     resultado.innerHTML =
-    "🚨 PEDIDO DUPLICADO<br><br>" +
-    "Pedido: " + pedido +
-    "<br><br>" +
-    "Já foi bipado " +
-    pedidos[pedido] +
-    " vezes.";
+
+        "🚨 PEDIDO DUPLICADO" +
+
+        "<br><br>" +
+
+        "Pedido: " +
+
+        pedido +
+
+        "<br><br>" +
+
+        "Já foi bipado " +
+
+        pedidos[pedido] +
+
+        " vezes.";
 
 }
 
 
 /*
-=================================================
+========================================================
 SALVAR
-=================================================
+========================================================
 */
 
 function salvar() {
@@ -390,9 +502,9 @@ function salvar() {
 
 
 /*
-=================================================
+========================================================
 ATUALIZAR TABELA
-=================================================
+========================================================
 */
 
 function atualizarTabela() {
@@ -404,12 +516,21 @@ function atualizarTabela() {
     let tabela = "";
 
 
+    /*
+    PERCORRE TODOS OS PEDIDOS
+    */
+
     for (
         let pedido in pedidos
     ) {
 
+
         total++;
 
+
+        /*
+        VERIFICA DUPLICADOS
+        */
 
         if (
             pedidos[pedido] > 1
@@ -420,38 +541,67 @@ function atualizarTabela() {
         }
 
 
-        let status =
-        pedidos[pedido] > 1
-        ? "🚨 DUPLICADO"
-        : "🟢 OK";
+        /*
+        STATUS
+        */
 
+        let status =
+
+            pedidos[pedido] > 1
+
+            ? "🚨 DUPLICADO"
+
+            : "🟢 OK";
+
+
+        /*
+        LINHA DA TABELA
+        */
 
         tabela += `
 
-        <tr>
+            <tr>
 
-            <td>${pedido}</td>
+                <td>
+                    ${pedido}
+                </td>
 
-            <td>${status}</td>
+                <td>
+                    ${status}
+                </td>
 
-            <td>${pedidos[pedido]}</td>
+                <td>
+                    ${pedidos[pedido]}
+                </td>
 
-        </tr>
+            </tr>
 
         `;
 
     }
 
 
+    /*
+    TOTAL
+    */
+
     document.getElementById(
         "total"
     ).innerText = total;
 
 
+    /*
+    DUPLICADOS
+    */
+
     document.getElementById(
         "duplicados"
     ).innerText = duplicados;
 
+
+    /*
+    HISTÓRICO
+    */
 
     document.getElementById(
         "historico"
@@ -461,23 +611,31 @@ function atualizarTabela() {
 
 
 /*
-=================================================
+========================================================
 LIMPAR HISTÓRICO
-=================================================
+========================================================
 */
 
 function limparHistorico() {
 
+
     let confirmar =
-    confirm(
-        "Deseja realmente apagar todo o histórico?"
-    );
+
+        confirm(
+            "Deseja realmente apagar todo o histórico?"
+        );
 
 
     if (!confirmar) {
+
         return;
+
     }
 
+
+    /*
+    APAGA OS DADOS
+    */
 
     pedidos = {};
 
@@ -487,24 +645,43 @@ function limparHistorico() {
     );
 
 
+    /*
+    RESTAURA TELA
+    */
+
     document.getElementById(
         "resultado"
-    ).className = "aguardando";
+    ).className =
+        "aguardando";
 
 
     document.getElementById(
         "resultado"
     ).innerHTML =
-    "Aguardando bipagem...";
+        "Aguardando bipagem...";
 
+
+    /*
+    ATUALIZA
+    */
 
     atualizarTabela();
 
+
+    /*
+    FOCO
+    */
 
     campo.focus();
 
 }
 
+
+/*
+========================================================
+INICIALIZA SISTEMA
+========================================================
+*/
 
 atualizarTabela();
 
