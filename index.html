@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Detector de Pedidos</title>
+
+<style>
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+}
+
+.container {
+    max-width: 700px;
+    margin: 40px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+h1 {
+    text-align: center;
+}
+
+.subtitulo {
+    text-align: center;
+    color: #666;
+}
+
+#pedido {
+    width: 100%;
+    padding: 20px;
+    font-size: 28px;
+    text-align: center;
+    border: 2px solid #aaa;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+#resultado {
+    margin-top: 20px;
+    padding: 25px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 10px;
+}
+
+.aguardando {
+    background: #eeeeee;
+}
+
+.novo {
+    background: #d4edda;
+    color: #155724;
+}
+
+.duplicado {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.painel {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 25px;
+}
+
+.card {
+    text-align: center;
+}
+
+.numero {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+table {
+    width: 100%;
+    margin-top: 30px;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+th {
+    background: #eee;
+}
+
+button {
+    width: 100%;
+    margin-top: 25px;
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #333;
+    color: white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>📦 DETECTOR DE PEDIDOS</h1>
+
+<p class="subtitulo">
+Bipe o pedido utilizando o coletor
+</p>
+
+<input
+    type="text"
+    id="pedido"
+    placeholder="Bipe o pedido aqui"
+    autocomplete="off"
+    autofocus
+>
+
+<div
+    id="resultado"
+    class="aguardando"
+>
+    Aguardando bipagem...
+</div>
+
+<div class="painel">
+
+<div class="card">
+
+<div>Total de pedidos</div>
+
+<div
+    id="total"
+    class="numero"
+>
+0
+</div>
+
+</div>
+
+<div class="card">
+
+<div>Duplicados</div>
+
+<div
+    id="duplicados"
+    class="numero"
+>
+0
+</div>
+
+</div>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Pedido</th>
+
+<th>Status</th>
+
+<th>Qtd.</th>
+
+</tr>
+
+</thead>
+
+<tbody id="historico">
+
+</tbody>
+
+</table>
+
+<button onclick="limparHistorico()">
+
+LIMPAR HISTÓRICO
+
+</button>
+
+</div>
+
+<script>
+
+let pedidos =
+JSON.parse(
+localStorage.getItem("pedidos")
+) || {};
+
+const campo =
+document.getElementById("pedido");
+
+campo.addEventListener(
+"keydown",
+function(event) {
+
+    if (event.key === "Enter") {
+
+        event.preventDefault();
+
+        verificarPedido();
+
+    }
+
+});
+
+function verificarPedido() {
+
+    let pedido =
+    campo.value.trim();
+
+    if (pedido === "") {
+        return;
+    }
+
+    if (pedidos[pedido]) {
+
+        pedidos[pedido]++;
+
+        mostrarDuplicado(pedido);
+
+    } else {
+
+        pedidos[pedido] = 1;
+
+        mostrarNovo(pedido);
+
+    }
+
+    salvar();
+
+    atualizarTabela();
+
+    campo.value = "";
+
+    campo.focus();
+
+}
+
+function mostrarNovo(pedido) {
+
+    const resultado =
+    document.getElementById("resultado");
+
+    resultado.className = "novo";
+
+    resultado.innerHTML =
+    "🟢 PEDIDO NOVO<br><br>" +
+    "Pedido: " + pedido;
+
+}
+
+function mostrarDuplicado(pedido) {
+
+    const resultado =
+    document.getElementById("resultado");
+
+    resultado.className = "duplicado";
+
+    resultado.innerHTML =
+    "🚨 PEDIDO DUPLICADO<br><br>" +
+    "Pedido: " + pedido +
+    "<br><br>" +
+    "Já foi bipado " +
+    pedidos[pedido] +
+    " vezes.";
+
+}
+
+function salvar() {
+
+    localStorage.setItem(
+        "pedidos",
+        JSON.stringify(pedidos)
+    );
+
+}
+
+function atualizarTabela() {
+
+    let total = 0;
+
+    let duplicados = 0;
+
+    let tabela = "";
+
+    for (
+        let pedido in pedidos
+    ) {
+
+        total++;
+
+        if (pedidos[pedido] > 1) {
+
+            duplicados++;
+
+        }
+
+        let status =
+        pedidos[pedido] > 1
+        ? "🚨 DUPLICADO"
+        : "🟢 OK";
+
+        tabela += `
+
+        <tr>
+
+            <td>${pedido}</td>
+
+            <td>${status}</td>
+
+            <td>${pedidos[pedido]}</td>
+
+        </tr>
+
+        `;
+
+    }
+
+    document.getElementById(
+        "total"
+    ).innerText = total;
+
+    document.getElementById(
+        "duplicados"
+    ).innerText = duplicados;
+
+    document.getElementById(
+        "historico"
+    ).innerHTML = tabela;
+
+}
+
+function limparHistorico() {
+
+    let confirmar =
+    confirm(
+        "Deseja realmente apagar todo o histórico?"
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    pedidos = {};
+
+    localStorage.removeItem(
+        "pedidos"
+    );
+
+    document.getElementById(
+        "resultado"
+    ).className = "aguardando";
+
+    document.getElementById(
+        "resultado"
+    ).innerHTML =
+    "Aguardando bipagem...";
+
+    atualizarTabela();
+
+    campo.focus();
+
+}
+
+atualizarTabela();
+
+</script>
+
+</body>
+
+</html>
